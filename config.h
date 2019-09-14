@@ -3,7 +3,6 @@
 /* appearance */
 static const unsigned int snap      = 32;
 static const unsigned int borderpx  = 1;
-static const unsigned int gappx     = 10;
 static const int showbar            = 0;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
 
@@ -69,7 +68,6 @@ static Key keys[] = {
   { MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
   { MODKEY,                       XK_w,      spawn,          {.v = wwwcmd } },
   { MODKEY,                       XK_b,      togglebar,      {0} },
-  { MODKEY,                       XK_p,      togglegap,      {0} },
   { MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
   { MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
   { MODKEY|ShiftMask,             XK_j,      movestack,      {.i = +1 } },

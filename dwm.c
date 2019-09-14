@@ -277,9 +277,6 @@ static Window root, wmcheckwin;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
-int isgapshowed = 1;
-unsigned int currgappx = gappx;
-
 struct Pertag {
 	unsigned int curtag, prevtag; /* current and previous tag */
 	int nmasters[LENGTH(tags) + 1]; /* number of windows in master area */
@@ -1062,12 +1059,12 @@ magicgrid(Monitor *m) {
     int cols = (row >= rows - extendedrows) ? basecols + 1: basecols;
 
     for (int col = 0; col < cols; col++) {
-      int w = (m->ww - currgappx) / cols;
-      int h = (m->wh - currgappx) / rows;
-      int x = m->wx + col * w + currgappx;
-      int y = m->wy + row * h + currgappx;
+      int w = m->ww / cols;
+      int h = m->wh / rows;
+      int x = m->wx + col * w;
+      int y = m->wy + row * h;
 
-      int buff = (2 * c->bw) + currgappx;
+      int buff = (2 * c->bw);
 
       resize(c, x, y, w - buff, h - buff, 0);
       c = nexttiled(c->next);
@@ -1173,8 +1170,8 @@ monocle(Monitor *m)
 	if (n > 0) /* override layout symbol */
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
 	for (c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
-    int buff = (2 * c->bw) + (2 * currgappx);
-		resize(c, m->wx + currgappx, m->wy + currgappx, m->ww - buff, m->wh - buff, 0);
+    int buff = (2 * c->bw);
+		resize(c, m->wx, m->wy, m->ww - buff, m->wh - buff, 0);
   }
 }
 
@@ -1771,30 +1768,27 @@ tagmon(const Arg *arg)
 void
 tile(Monitor *m)
 {
-	unsigned int i, n, h, mw, my, ty, ns;
+	unsigned int i, n, h, mw, my, ty;
 	Client *c;
 
 	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++);
 	if (n == 0)
 		return;
 
-	if (n > m->nmaster) {
+	if (n > m->nmaster)
 		mw = m->nmaster ? m->ww * m->mfact : 0;
-		ns = m->nmaster > 0 ? 2 : 1;
-	} else {
+	else
 		mw = m->ww;
-		ns = 1;
-	}
 
-	for(i = 0, my = ty = currgappx, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
+	for(i = my = ty = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
 		if (i < m->nmaster) {
-			h = (m->wh - my) / (MIN(n, m->nmaster) - i) - currgappx;
-			resize(c, m->wx + currgappx, m->wy + my, mw - (2*c->bw) - currgappx*(5-ns)/2, h - (2*c->bw), False);
-			my += HEIGHT(c) + currgappx;
+      h = (m->wh - my) / (MIN(n, m->nmaster) - i);
+      resize(c, m->wx, m->wy + my, mw - (2*c->bw), h - (2*c->bw), 0);
+      my += HEIGHT(c);
 		} else {
-			h = (m->wh - ty) / (n - i) - currgappx;
-			resize(c, m->wx + mw + currgappx/ns, m->wy + ty, m->ww - mw - (2*c->bw) - currgappx*(5-ns)/2, h - (2*c->bw), False);
-			ty += HEIGHT(c) + currgappx;
+      h = (m->wh - ty) / (n - i);
+      resize(c, m->wx + mw, m->wy + ty, m->ww - mw - (2*c->bw), h - (2*c->bw), 0);
+      ty += HEIGHT(c);
 		}
   }
 }
@@ -1818,14 +1812,6 @@ togglefloating(const Arg *arg)
 		resize(selmon->sel, selmon->sel->x, selmon->sel->y,
 			selmon->sel->w, selmon->sel->h, 0);
 	arrange(selmon);
-}
-
-
-void
-togglegap(const Arg *arg) {
-  isgapshowed = !isgapshowed;
-  currgappx = isgapshowed ? gappx : 0;
-  arrange(selmon);
 }
 
 void
