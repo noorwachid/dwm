@@ -179,12 +179,14 @@ static void grabkeys(void);
 static void incnmaster(const Arg *arg);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
+static void magicgrid(Monitor *m);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
 static void monocle(Monitor *m);
 static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
+static void movestack(const Arg *arg);
 static Client *nexttiled(Client *c);
 static void pop(Client *);
 static void propertynotify(XEvent *e);
@@ -197,6 +199,7 @@ static void restack(Monitor *m);
 static void run(void);
 static void scan(void);
 static int sendevent(Client *c, Atom proto);
+
 static void sendmon(Client *c, Monitor *m);
 static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
@@ -213,6 +216,7 @@ static void tagmon(const Arg *arg);
 static void tile(Monitor *);
 static void togglebar(const Arg *arg);
 static void togglefloating(const Arg *arg);
+static void togglegap(const Arg *arg);
 static void toggletag(const Arg *arg);
 static void toggleview(const Arg *arg);
 static void unfocus(Client *c, int setfocus);
@@ -272,6 +276,9 @@ static Window root, wmcheckwin;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
+
+int isgapshowed = showgap;
+unsigned int currgappx = gappx;
 
 struct Pertag {
 	unsigned int curtag, prevtag; /* current and previous tag */
@@ -1027,6 +1034,47 @@ killclient(const Arg *arg)
 	}
 }
 
+void 
+magicgrid(Monitor *m) {
+  Client *c;
+  int total = 0;
+
+	for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+    total++;
+  }
+  
+  int rows;
+  for (rows = 1; rows < total; rows++) {
+    int rowssq = rows * rows;
+    int nextsq = (rows + 1) * (rows + 1);
+
+    if (total >= rowssq && total < nextsq) {
+      break; 
+    }
+  }
+
+  int basecols = total / rows;
+  int extendedrows = total - (rows * basecols);
+
+  c = nexttiled(m->clients);
+
+  for (int row = 0; row < rows; row++) {
+    int cols = (row >= rows - extendedrows) ? basecols + 1: basecols;
+
+    for (int col = 0; col < cols; col++) {
+      int w = (m->ww - currgappx) / cols;
+      int h = (m->wh - currgappx) / rows;
+      int x = m->wx + col * w + currgappx;
+      int y = m->wy + row * h + currgappx;
+
+      int buff = (2 * c->bw) + currgappx;
+
+      resize(c, x, y, w - buff, h - buff, 0);
+      c = nexttiled(c->next);
+    }
+  }
+}
+
 void
 manage(Window w, XWindowAttributes *wa)
 {
@@ -1124,8 +1172,10 @@ monocle(Monitor *m)
 			n++;
 	if (n > 0) /* override layout symbol */
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
-	for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
-		resize(c, m->wx, m->wy, m->ww - 2 * c->bw, m->wh - 2 * c->bw, 0);
+	for (c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+    int buff = (2 * c->bw) + (2 * currgappx);
+		resize(c, m->wx + currgappx, m->wy + currgappx, m->ww - buff, m->wh - buff, 0);
+  }
 }
 
 void
@@ -1200,6 +1250,55 @@ movemouse(const Arg *arg)
 		sendmon(c, m);
 		selmon = m;
 		focus(NULL);
+	}
+}
+
+void
+movestack(const Arg *arg) {
+	Client *c = NULL, *p = NULL, *pc = NULL, *i;
+
+	if(arg->i > 0) {
+		/* find the client after selmon->sel */
+		for(c = selmon->sel->next; c && (!ISVISIBLE(c) || c->isfloating); c = c->next);
+		if(!c)
+			for(c = selmon->clients; c && (!ISVISIBLE(c) || c->isfloating); c = c->next);
+
+	}
+	else {
+		/* find the client before selmon->sel */
+		for(i = selmon->clients; i != selmon->sel; i = i->next)
+			if(ISVISIBLE(i) && !i->isfloating)
+				c = i;
+		if(!c)
+			for(; i; i = i->next)
+				if(ISVISIBLE(i) && !i->isfloating)
+					c = i;
+	}
+	/* find the client before selmon->sel and c */
+	for(i = selmon->clients; i && (!p || !pc); i = i->next) {
+		if(i->next == selmon->sel)
+			p = i;
+		if(i->next == c)
+			pc = i;
+	}
+
+	/* swap c and selmon->sel selmon->clients in the selmon->clients list */
+	if(c && c != selmon->sel) {
+		Client *temp = selmon->sel->next==c?selmon->sel:selmon->sel->next;
+		selmon->sel->next = c->next==selmon->sel?c:c->next;
+		c->next = temp;
+
+		if(p && p != c)
+			p->next = c;
+		if(pc && pc != selmon->sel)
+			pc->next = selmon->sel;
+
+		if(selmon->sel == selmon->clients)
+			selmon->clients = c;
+		else if(c == selmon->clients)
+			selmon->clients = selmon->sel;
+
+		arrange(selmon);
 	}
 }
 
@@ -1686,16 +1785,18 @@ tile(Monitor *m)
 		mw = m->ww;
 		ns = 1;
 	}
-	for(i = 0, my = ty = gappx, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
+
+	for(i = 0, my = ty = currgappx, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
 		if (i < m->nmaster) {
-			h = (m->wh - my) / (MIN(n, m->nmaster) - i) - gappx;
-			resize(c, m->wx + gappx, m->wy + my, mw - (2*c->bw) - gappx*(5-ns)/2, h - (2*c->bw), False);
-			my += HEIGHT(c) + gappx;
+			h = (m->wh - my) / (MIN(n, m->nmaster) - i) - currgappx;
+			resize(c, m->wx + currgappx, m->wy + my, mw - (2*c->bw) - currgappx*(5-ns)/2, h - (2*c->bw), False);
+			my += HEIGHT(c) + currgappx;
 		} else {
-			h = (m->wh - ty) / (n - i) - gappx;
-			resize(c, m->wx + mw + gappx/ns, m->wy + ty, m->ww - mw - (2*c->bw) - gappx*(5-ns)/2, h - (2*c->bw), False);
-			ty += HEIGHT(c) + gappx;
+			h = (m->wh - ty) / (n - i) - currgappx;
+			resize(c, m->wx + mw + currgappx/ns, m->wy + ty, m->ww - mw - (2*c->bw) - currgappx*(5-ns)/2, h - (2*c->bw), False);
+			ty += HEIGHT(c) + currgappx;
 		}
+  }
 }
 
 void
@@ -1717,6 +1818,14 @@ togglefloating(const Arg *arg)
 		resize(selmon->sel, selmon->sel->x, selmon->sel->y,
 			selmon->sel->w, selmon->sel->h, 0);
 	arrange(selmon);
+}
+
+
+void
+togglegap(const Arg *arg) {
+  isgapshowed = !isgapshowed;
+  currgappx = isgapshowed ? gappx : 0;
+  arrange(selmon);
 }
 
 void

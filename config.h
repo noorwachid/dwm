@@ -4,6 +4,7 @@
 static const unsigned int borderpx  = 1;
 static const unsigned int gappx     = 10;
 static const unsigned int snap      = 32;       /* snap pixel */
+static const int showgap            = 1;
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
 
@@ -38,7 +39,6 @@ static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] 
 static const int nmaster     = 1;    /* number of clients in master area */
 static const int resizehints = 0;    /* 1 means respect size hints in tiled resizals */
 
-#include "layouts.c"
 static const Layout layouts[] = {
   /* symbol     arrange function */
   { "[]=",      tile },
@@ -68,6 +68,7 @@ static Key keys[] = {
   { MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
   { MODKEY,                       XK_Return, spawn,          {.v = termcmd } },
   { MODKEY,                       XK_b,      togglebar,      {0} },
+  { MODKEY,                       XK_p,      togglegap,      {0} },
   { MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
   { MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
   { MODKEY|ShiftMask,             XK_j,      movestack,      {.i = +1 } },
