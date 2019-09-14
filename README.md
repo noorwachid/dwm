@@ -1,7 +1,9 @@
 # DWM
 ## Highlighted Features
 ### Gaps
-I have modified all layout to have gaps. And you could toggle the gap with `^P`.
+What are you looking for now days! I have modified all layout to have gaps its not like `gaps` or `uselessgap` that tried to change multiple things with one thing. I added each layout to have correct gapping behaviour like what I want. Even you could toggle the gap with `^P`.
+
+If you are not meme person you can use `nogaps` branch that has no gaps code in it.
 
 ![togglegap.gif](togglegap.gif)
 
@@ -20,3 +22,4 @@ List patch installed:
 - notitle
 - pertag
 - tilegap
+Some are my direct modification that I really to lazy to create patch for. like `lineheight` in `config.h` for bar height.
