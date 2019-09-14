@@ -277,7 +277,7 @@ static Window root, wmcheckwin;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
-int isgapshowed = showgap;
+int isgapshowed = 1;
 unsigned int currgappx = gappx;
 
 struct Pertag {
