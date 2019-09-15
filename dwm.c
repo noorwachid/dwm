@@ -1,4 +1,4 @@
-/* See LICENSE file for copyright and license details.
+/* See LICENSE file f/r copyright and license details.
  *
  * dynamic window manager is designed like any other X client as well. It is
  * driven through handling X events. In contrast to other X clients, a window
@@ -216,7 +216,6 @@ static void tagmon(const Arg *arg);
 static void tile(Monitor *);
 static void togglebar(const Arg *arg);
 static void togglefloating(const Arg *arg);
-static void togglegap(const Arg *arg);
 static void toggletag(const Arg *arg);
 static void toggleview(const Arg *arg);
 static void unfocus(Client *c, int setfocus);
@@ -800,6 +799,8 @@ expose(XEvent *e)
 void
 focus(Client *c)
 {
+  XWindowChanges wc;
+
 	if (!c || !ISVISIBLE(c))
 		for (c = selmon->stack; c && !ISVISIBLE(c); c = c->snext);
 	if (selmon->sel && selmon->sel != c)
@@ -813,6 +814,11 @@ focus(Client *c)
 		attachstack(c);
 		grabbuttons(c, 1);
 		XSetWindowBorder(dpy, c->win, scheme[SchemeSel][ColBorder].pixel);
+    if (!c->isfloating) {
+      wc.sibling = selmon->barwin;
+      wc.stack_mode = Below;
+      XConfigureWindow(dpy, c->win, CWSibling|CWStackMode, &wc);
+    }
 		setfocus(c);
 	} else {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
@@ -1035,11 +1041,18 @@ void
 magicgrid(Monitor *m) {
   Client *c;
   int total = 0;
-
-	for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+  for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
     total++;
+
+  c = nexttiled(m->clients);
+
+  if (total == 0)
+    return;
+  if (total == 1) {
+    resize(c, m->wx - c->bw, m->wy - c->bw, m->ww, m->wh, 0); 
+    return;
   }
-  
+
   int rows;
   for (rows = 1; rows < total; rows++) {
     int rowssq = rows * rows;
@@ -1053,20 +1066,18 @@ magicgrid(Monitor *m) {
   int basecols = total / rows;
   int extendedrows = total - (rows * basecols);
 
-  c = nexttiled(m->clients);
-
   for (int row = 0; row < rows; row++) {
     int cols = (row >= rows - extendedrows) ? basecols + 1: basecols;
+    int w = (m->ww - c->bw) / cols;
+    int h = (m->wh - c->bw) / rows;
+
+    /* aestetic purpose */
+    int df = (m->ww - c->bw) - w * cols;
 
     for (int col = 0; col < cols; col++) {
-      int w = m->ww / cols;
-      int h = m->wh / rows;
       int x = m->wx + col * w;
       int y = m->wy + row * h;
-
-      int buff = (2 * c->bw);
-
-      resize(c, x, y, w - buff, h - buff, 0);
+      resize(c, x, y, w - c->bw + (col == cols - 1 ? df : 0), h - c->bw, 0);
       c = nexttiled(c->next);
     }
   }
@@ -1170,8 +1181,7 @@ monocle(Monitor *m)
 	if (n > 0) /* override layout symbol */
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
 	for (c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
-    int buff = (2 * c->bw);
-		resize(c, m->wx, m->wy, m->ww - buff, m->wh - buff, 0);
+		resize(c, m->wx - c->bw, m->wy - c->bw, m->ww, m->wh, 0);
   }
 }
 
@@ -1386,13 +1396,6 @@ resizeclient(Client *c, int x, int y, int w, int h)
 	c->oldw = c->w; c->w = wc.width = w;
 	c->oldh = c->h; c->h = wc.height = h;
 	wc.border_width = c->bw;
-	if (((nexttiled(c->mon->clients) == c && !nexttiled(c->next))
-	    || &monocle == c->mon->lt[c->mon->sellt]->arrange)
-	    && !c->isfullscreen && !c->isfloating) {
-		c->w = wc.width += c->bw * 2;
-		c->h = wc.height += c->bw * 2;
-		wc.border_width = 0;
-	}
 	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
 	configure(c);
 	XSync(dpy, False);
@@ -1771,25 +1774,36 @@ tile(Monitor *m)
 	unsigned int i, n, h, mw, my, ty;
 	Client *c;
 
-	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++);
+	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next))
+    n++;
+
+  c = nexttiled(m->clients);
+
 	if (n == 0)
 		return;
+  if (n == 1) {
+    resize(c, m->wx - c->bw, m->wy - c->bw, m->ww, m->wh, 0); 
+    return;
+  }
 
-	if (n > m->nmaster)
-		mw = m->nmaster ? m->ww * m->mfact : 0;
-	else
-		mw = m->ww;
+  int nw = m->ww - c->bw;
+  int nh = m->wh - c->bw * 2;
 
-	for(i = my = ty = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
-		if (i < m->nmaster) {
-      h = (m->wh - my) / (MIN(n, m->nmaster) - i);
-      resize(c, m->wx, m->wy + my, mw - (2*c->bw), h - (2*c->bw), 0);
-      my += HEIGHT(c);
-		} else {
-      h = (m->wh - ty) / (n - i);
-      resize(c, m->wx + mw, m->wy + ty, m->ww - mw - (2*c->bw), h - (2*c->bw), 0);
-      ty += HEIGHT(c);
-		}
+  if (n > m->nmaster)
+    mw = m->nmaster ? nw * m->mfact : 0;
+  else
+    mw = nw;
+
+  for(i = my = ty = 0; c; c = nexttiled(c->next), i++) {
+    if (i < m->nmaster) {
+      h = (nh - my) / (MIN(n, m->nmaster) - i) + c->bw;
+      resize(c, m->wx, m->wy + my, mw - c->bw, h - c->bw, 0);
+      my += HEIGHT(c) - c->bw;
+    } else {
+      h = (nh - ty) / (n - i) + c->bw;
+      resize(c, m->wx + mw, m->wy + ty, nw - mw - c->bw, h - c->bw, 0);
+      ty += HEIGHT(c) - c->bw;
+    }
   }
 }
 
