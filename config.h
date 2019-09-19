@@ -3,7 +3,7 @@
 /* appearance */
 static const unsigned int snap      = 32;
 static const unsigned int borderpx  = 1;
-static const int showbar            = 0;        /* 0 means no bar */
+static const int showbar            = 0;
 static const int topbar             = 1;        /* 0 means bottom bar */
 
 static const int lineheight         = 24;
@@ -13,7 +13,7 @@ static const char col_gray1[]       = "#282828";
 static const char col_gray2[]       = "#444444";
 static const char col_gray3[]       = "#e8e8e8";
 static const char col_gray4[]       = "#f3f3f3";
-static const char col_cyan[]        = "#e1e1e1";
+static const char col_cyan[]        = "#e8e8e8";
 static const char *colors[][3]      = {
   /*               fg         bg         border   */
   [SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
@@ -60,17 +60,11 @@ static const Layout layouts[] = {
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *termcmd[]  = { "st", NULL };
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, NULL };
-static const char *wwwcmd[]  = { "firefox", NULL };
-static const char *filecmd[]  = { "st", "-e", "nnn", "-d",  NULL };
-static const char *musiccmd[]  = { "st", "-e", "cmus", NULL };
 
 static Key keys[] = {
   /* modifier                     key        function        argument */
   { MODKEY,                       XK_Return, spawn,          {.v = termcmd } },
   { MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
-  { MODKEY,                       XK_w,      spawn,          {.v = wwwcmd } },
-  { MODKEY,                       XK_e,      spawn,          {.v = filecmd } },
-  { MODKEY,                       XK_a,      spawn,          {.v = musiccmd } },
   { MODKEY,                       XK_b,      togglebar,      {0} },
   { MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
   { MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
@@ -80,7 +74,8 @@ static Key keys[] = {
   { MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
   { MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
   { MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
-  { MODKEY|ShiftMask,             XK_Return, zoom,           {0} },
+  { MODKEY,                       XK_z,      zoom,           {0} },
+  { MODKEY|ShiftMask,             XK_z,      zoommaster,     {0} },
   { MODKEY,                       XK_Tab,    view,           {0} },
   { MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
   { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
@@ -106,16 +101,20 @@ static Key keys[] = {
   TAGKEYS(                        XK_9,                      8)
   { MODKEY|ShiftMask,             XK_q,      quit,           {0} },
 
-  { 0,                      0x1008ff02,      spawn,          SHCMD("~/.scripts/brightness.sh 2 inc") },
-  { 0,                      0x1008ff03,      spawn,          SHCMD("~/.scripts/brightness.sh 2 dec") },
+  { MODKEY,                       XK_w,      spawn,          SHCMD("firefox") },
+  { MODKEY,                       XK_e,      spawn,          SHCMD("st -e nnn -d") },
+  { MODKEY,                       XK_a,      spawn,          SHCMD("st -e cmus") },
 
-  { 0,                      0x1008ff12,      spawn,          SHCMD("~/.scripts/volume.sh 0 mut") },
-  { 0,                      0x1008ff13,      spawn,          SHCMD("~/.scripts/volume.sh 4 inc") },
-  { 0,                      0x1008ff11,      spawn,          SHCMD("~/.scripts/volume.sh 4 dec") },
+  { 0,                      0x1008ff02,      spawn,          SHCMD("brightness.sh 2 inc") },
+  { 0,                      0x1008ff03,      spawn,          SHCMD("brightness.sh 2 dec") },
 
-  { 0,                        XK_Print,      spawn,          SHCMD("~/.scripts/ss.sh") },
-  { MODKEY,                   XK_Print,      spawn,          SHCMD("~/.scripts/ss.sh w") },
-  { ShiftMask,                XK_Print,      spawn,          SHCMD("sleep 1s; ~/.scripts/ss.sh s") },
+  { 0,                      0x1008ff12,      spawn,          SHCMD("volume.sh 0 mut") },
+  { 0,                      0x1008ff13,      spawn,          SHCMD("volume.sh 4 inc") },
+  { 0,                      0x1008ff11,      spawn,          SHCMD("volume.sh 4 dec") },
+
+  { 0,                        XK_Print,      spawn,          SHCMD("screenshoot.sh") },
+  { MODKEY,                   XK_Print,      spawn,          SHCMD("screenshoot.sh w") },
+  { ShiftMask,                XK_Print,      spawn,          SHCMD("sleep 1s; screenshoot.sh s") },
 };
 
 /* button definitions */

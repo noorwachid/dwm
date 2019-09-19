@@ -238,6 +238,7 @@ static int xerror(Display *dpy, XErrorEvent *ee);
 static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
+static void zoommaster(const Arg *arg);
 
 /* variables */
 static const char broken[] = "broken";
@@ -2281,6 +2282,12 @@ zoom(const Arg *arg)
 		if (!c || !(c = nexttiled(c->next)))
 			return;
 	pop(c);
+}
+
+void
+zoommaster(const Arg *arg)
+{
+	focus(nexttiled(selmon->clients));
 }
 
 int
