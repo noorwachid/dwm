@@ -65,6 +65,7 @@ static Key keys[] = {
   /* modifier                     key        function        argument */
   { MODKEY,                       XK_Return, spawn,          {.v = termcmd } },
   { MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
+
   { MODKEY,                       XK_b,      togglebar,      {0} },
   { MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
   { MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
@@ -90,6 +91,7 @@ static Key keys[] = {
   { MODKEY,                       XK_period, focusmon,       {.i = +1 } },
   { MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
   { MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+
   TAGKEYS(                        XK_1,                      0)
   TAGKEYS(                        XK_2,                      1)
   TAGKEYS(                        XK_3,                      2)
@@ -102,8 +104,6 @@ static Key keys[] = {
   { MODKEY|ShiftMask,             XK_q,      quit,           {0} },
 
   { MODKEY,                       XK_w,      spawn,          SHCMD("firefox") },
-  { MODKEY,                       XK_e,      spawn,          SHCMD("st -e nnn -d") },
-  { MODKEY,                       XK_a,      spawn,          SHCMD("st -e cmus") },
 
   { 0,                      0x1008ff02,      spawn,          SHCMD("brightness.sh 2 inc") },
   { 0,                      0x1008ff03,      spawn,          SHCMD("brightness.sh 2 dec") },
@@ -112,9 +112,9 @@ static Key keys[] = {
   { 0,                      0x1008ff13,      spawn,          SHCMD("volume.sh 4 inc") },
   { 0,                      0x1008ff11,      spawn,          SHCMD("volume.sh 4 dec") },
 
-  { 0,                        XK_Print,      spawn,          SHCMD("screenshoot.sh") },
-  { MODKEY,                   XK_Print,      spawn,          SHCMD("screenshoot.sh w") },
-  { ShiftMask,                XK_Print,      spawn,          SHCMD("sleep 1s; screenshoot.sh s") },
+  { 0,                        XK_Print,      spawn,          SHCMD("screenshot.sh") },
+  { MODKEY,                   XK_Print,      spawn,          SHCMD("screenshot.sh w") },
+  { ShiftMask,                XK_Print,      spawn,          SHCMD("sleep 1s; screenshot.sh s") },
 };
 
 /* button definitions */
