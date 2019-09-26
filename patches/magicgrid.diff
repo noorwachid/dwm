@@ -1,0 +1,88 @@
+diff --git a/config.def.h b/config.def.h
+index 1c0b587..786e457 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -2,6 +2,7 @@
+ 
+ /* appearance */
+ static const unsigned int borderpx  = 1;        /* border pixel of windows */
++static const unsigned int gappx     = 10;
+ static const unsigned int snap      = 32;       /* snap pixel */
+ static const int showbar            = 1;        /* 0 means no bar */
+ static const int topbar             = 1;        /* 0 means bottom bar */
+@@ -41,6 +42,7 @@ static const Layout layouts[] = {
+ 	{ "[]=",      tile },    /* first entry is default */
+ 	{ "><>",      NULL },    /* no layout function means floating behavior */
+ 	{ "[M]",      monocle },
++	{ "+++",      magicgrid },
+ };
+ 
+ /* key definitions */
+@@ -76,6 +78,7 @@ static Key keys[] = {
+ 	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
+ 	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
+ 	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
++	{ MODKEY,                       XK_g,      setlayout,      {.v = &layouts[3]} },
+ 	{ MODKEY,                       XK_space,  setlayout,      {0} },
+ 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
+ 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+diff --git a/dwm.c b/dwm.c
+index 4465af1..61f28b9 100644
+--- a/dwm.c
++++ b/dwm.c
+@@ -177,6 +177,7 @@ static void grabkeys(void);
+ static void incnmaster(const Arg *arg);
+ static void keypress(XEvent *e);
+ static void killclient(const Arg *arg);
++static void magicgrid(Monitor *m);
+ static void manage(Window w, XWindowAttributes *wa);
+ static void mappingnotify(XEvent *e);
+ static void maprequest(XEvent *e);
+@@ -1014,6 +1015,47 @@ killclient(const Arg *arg)
+ 	}
+ }
+ 
++void 
++magicgrid(Monitor *m) {
++  Client *c;
++  int total = 0;
++
++	for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
++    total++;
++  }
++  
++  int rows;
++  for (rows = 1; rows < total; rows++) {
++    int rowssq = rows * rows;
++    int nextsq = (rows + 1) * (rows + 1);
++
++    if (total >= rowssq && total < nextsq) {
++      break; 
++    }
++  }
++
++  int basecols = total / rows;
++  int extendedrows = total - (rows * basecols);
++
++  c = nexttiled(m->clients);
++
++  for (int row = 0; row < rows; row++) {
++    int cols = (row >= rows - extendedrows) ? basecols + 1: basecols;
++
++    for (int col = 0; col < cols; col++) {
++      int w = (m->ww - gappx) / cols;
++      int h = (m->wh - gappx) / rows;
++      int x = m->wx + col * w + gappx;
++      int y = m->wy + row * h + gappx;
++
++      int buff = (2 * c->bw) + gappx;
++
++      resize(c, x, y, w - buff, h - buff, 0);
++      c = nexttiled(c->next);
++    }
++  }
++}
++
+ void
+ manage(Window w, XWindowAttributes *wa)
+ {
