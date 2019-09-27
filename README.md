@@ -19,7 +19,6 @@ List patch installed:
 - movestack
 - magicgrid
 - noborder
-- notitle
 - pertag
 - tilegap
 
