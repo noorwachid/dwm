@@ -13,7 +13,6 @@ Layout that always fill the space even though the number of windows are odd or p
 ![magicgrid.gif](magicgrid.gif)
 
 ## Note
-Note to use this build you have to use my [dotfiles](https://github.com/wachd/dotfiles) or you can change the binding for multimedia keys.
 List patch installed:
 - fakefullscreen
 - movestack
